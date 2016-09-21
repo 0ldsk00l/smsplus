@@ -1,0 +1,5 @@
+
+ To compile:
+
+ DOS: You'll need Allegro, SEAL and zlib. The fileutils package is needed
+      for the 'clean' target in the makefile.
