@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <libgen.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include <GLFW/glfw3.h>
 
@@ -14,8 +17,8 @@
 #include "smsplus.h"
 #include "video.h"
 
-char game_name[PATH_MAX];
 settings_t settings;
+gamedata_t gdata;
 
 static GLFWwindow *window;
 
@@ -164,14 +167,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 void smsp_state(int slot, int mode) {
 	// Save and Load States
-	char stpathbuf[PATH_MAX];
 	char stpath[PATH_MAX];
-	snprintf(stpathbuf, sizeof(stpathbuf), "%s", game_name);
-	// strip the . and extention off the filename for saving
-	for (int i = strlen(stpathbuf)-1; i > 0; i--) {
-		if (stpathbuf[i] == '.') { stpathbuf[i] = '\0'; break; }
-	}
-	snprintf(stpath, sizeof(stpath), "%s.st%d", stpathbuf, slot);
+	snprintf(stpath, sizeof(stpath), "%s%s.st%d", gdata.stdir, gdata.gamename, slot);
 	
 	FILE *fd;
 	
@@ -196,21 +193,12 @@ void smsp_state(int slot, int mode) {
 
 void system_manage_sram(uint8_t *sram, int slot, int mode) {
 	// Set up save file name
-	char savenamebuf[PATH_MAX];
-	char savename[PATH_MAX];
-	snprintf(savenamebuf, sizeof(savenamebuf), "%s", game_name);
-	// strip the . and extention off the filename for saving
-	for (int i = strlen(savenamebuf)-1; i > 0; i--) {
-		if (savenamebuf[i] == '.') { savenamebuf[i] = '\0'; break; }
-	}
-	snprintf(savename, sizeof(savename), "%s.sav", savenamebuf);
-	
 	FILE *fd;
 	
 	switch(mode) {
 		case SRAM_SAVE:
 			if(sms.save) {
-				fd = fopen(savename, "wb");
+				fd = fopen(gdata.sramfile, "wb");
 				if (fd) {
 					fwrite(sram, 0x8000, 1, fd);
 					fclose(fd);
@@ -219,7 +207,7 @@ void system_manage_sram(uint8_t *sram, int slot, int mode) {
 			break;
 		
 		case SRAM_LOAD:
-			fd = fopen(savename, "rb");
+			fd = fopen(gdata.sramfile, "rb");
 			if (fd) {
 				sms.save = 1;
 				fread(sram, 0x8000, 1, fd);
@@ -243,6 +231,41 @@ static GB_INI_HANDLER(smsp_ini_handler) {
 	return 1;
 }
 
+static void smsp_gamedata_set(char *filename) {
+	// Set paths, create directories
+	
+	// Set the game name
+	snprintf(gdata.gamename, sizeof(gdata.gamename), "%s", basename(filename));
+	
+	// Strip the file extension off
+	for (int i = strlen(gdata.gamename) - 1; i > 0; i--) {
+		if (gdata.gamename[i] == '.') {
+			gdata.gamename[i] = '\0';
+			break;
+		}
+	}
+	
+	// Set up the sram directory
+	snprintf(gdata.sramdir, sizeof(gdata.sramdir), "sram/");
+	if (mkdir(gdata.sramdir, 0755) && errno != EEXIST) {	
+		fprintf(stderr, "Failed to create %s: %d\n", gdata.sramdir, errno);
+	}
+	
+	// Set up the sram file
+	snprintf(gdata.sramfile, sizeof(gdata.sramfile), "%s%s.sav", gdata.sramdir, gdata.gamename);
+	
+	// Set up the state directory
+	snprintf(gdata.stdir, sizeof(gdata.stdir), "state/");
+	if (mkdir(gdata.stdir, 0755) && errno != EEXIST) {	
+		fprintf(stderr, "Failed to create %s: %d\n", gdata.stdir, errno);
+	}
+	
+	// Set up the screenshot directory
+	if (mkdir("screenshots/", 0755) && errno != EEXIST) {	
+		fprintf(stderr, "Failed to create %s: %d\n", "screenshots/", errno);
+	}
+}
+
 int main (int argc, char *argv[]) {
 	
 	// Print Header
@@ -253,11 +276,15 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	
-	snprintf(game_name, sizeof(game_name), "%s", argv[1]);
+	smsp_gamedata_set(argv[1]);
+	
+	// Check the type of ROM
+	sms.console = strcmp(strrchr(argv[1], '.'), ".gg") ?
+	CONSOLE_SMS : CONSOLE_GG;
 	
 	// Load ROM
-	if(!load_rom(game_name)) {
-		fprintf(stderr, "Error: Failed to load %s.\n", game_name);
+	if(!load_rom(argv[1])) {
+		fprintf(stderr, "Error: Failed to load %s.\n", argv[1]);
 		exit(1);
 	}
 	
@@ -334,7 +361,7 @@ int main (int argc, char *argv[]) {
 	while (!glfwWindowShouldClose(window)) {
 		// Output audio
 		audio_play();
-		
+		//printf("Got here\n");
 		// Refresh video data
 		bitmap.data = pixels;
 		

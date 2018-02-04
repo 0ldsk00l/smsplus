@@ -5,8 +5,6 @@
 
 #include "shared.h"
 
-char game_name[PATH_MAX];
-
 typedef struct {
     uint32_t crc;
     int mapper;
@@ -88,12 +86,6 @@ int load_rom(char *filename)
             sms.territory   = game_list[i].territory;
         }
     }
-
-    /* Figure out game image type */
-    if(strcmp(strrchr(game_name, '.'), ".gg") == 0)
-        sms.console = CONSOLE_GG;
-    else
-        sms.console = CONSOLE_SMS;
 
     system_assign_device(PORT_A, DEVICE_PAD2B);
     system_assign_device(PORT_B, DEVICE_PAD2B);
