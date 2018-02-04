@@ -37,6 +37,7 @@ smsplus: $(OBJ)
 		$(CC) -o smsplus $(OBJ) $(LIBS) $(LDFLAGS)
 
 obj/%.o: core/%.c core/%.h
+		@mkdir -p obj/
 		$(CC) -c $< -o $@ $(FLAGS)
 
 obj/%.o: shell/%.c shell/%.h

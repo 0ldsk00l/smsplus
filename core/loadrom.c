@@ -69,6 +69,9 @@ int load_rom(char *filename)
 
     cart.pages = (size / 0x4000);
     cart.crc = crc32(0L, cart.rom, size);
+    
+    const char *shabuf = sha1(cart.rom, sizeof(cart.rom));
+    snprintf(cart.sha1, sizeof(cart.sha1), "%s", shabuf);
 
     /* Assign default settings (US NTSC machine) */
     cart.mapper     = MAPPER_SEGA;

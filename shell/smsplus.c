@@ -245,12 +245,15 @@ static GB_INI_HANDLER(smsp_ini_handler) {
 
 int main (int argc, char *argv[]) {
 	
+	// Print Header
+	fprintf(stdout, "%s %s\n", APP_NAME, APP_VERSION);
+	
 	if(argc < 2) {
-		fprintf(stderr, "No filename specified.\n");
+		fprintf(stderr, "Usage: ./smsplus [FILE]\n");
 		exit(1);
 	}
 	
-    snprintf(game_name, sizeof(game_name), "%s", argv[1]);
+	snprintf(game_name, sizeof(game_name), "%s", argv[1]);
 	
 	// Load ROM
 	if(!load_rom(game_name)) {
@@ -258,16 +261,21 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	
+	fprintf(stdout, "CRC : %X\n", cart.crc);
+	fprintf(stdout, "SHA1: %s\n", cart.sha1);
+	
 	// Set defaults
 	settings.video_scale = 2;
-	settings.audio_rate = settings.audio_rate;
+	settings.audio_rate = 48000;
 	settings.audio_fm = 1;
 	settings.audio_fmtype = SND_EMU2413;
 	settings.misc_region = TERRITORY_DOMESTIC;
 	
 	// Override settings set in the .ini
 	gbIniError err = gb_ini_parse("smsplus.ini", &smsp_ini_handler, &settings);
-	if (err.type != GB_INI_ERROR_NONE) { return 1; }
+	if (err.type != GB_INI_ERROR_NONE) {
+		fprintf(stderr, "Error: No smsplus.ini file found.\n");
+	}
 	
 	// Create video buffer
 	pixels = calloc(VIDEO_WIDTH_SMS * VIDEO_HEIGHT_SMS * 4, 1);
@@ -302,9 +310,9 @@ int main (int argc, char *argv[]) {
 	
 	// Initialize GLFW
 	if (!glfwInit()) { return -1; }
-
+	
 	// Create a windowed mode window and its OpenGL context
-	window = glfwCreateWindow(VIDEO_WIDTH_SMS * settings.video_scale, VIDEO_HEIGHT_SMS * settings.video_scale, "SMS Plus", NULL, NULL);
+	window = glfwCreateWindow(VIDEO_WIDTH_SMS * settings.video_scale, VIDEO_HEIGHT_SMS * settings.video_scale, APP_NAME, NULL, NULL);
 	
 	// If the window can't be created, kill the program
 	if (!window) {
@@ -314,7 +322,7 @@ int main (int argc, char *argv[]) {
 	
 	// Set up keyboard callback function
 	glfwSetKeyCallback(window, key_callback);
-
+	
 	// Make the window's context current
 	glfwMakeContextCurrent(window);
 	
@@ -350,7 +358,7 @@ int main (int argc, char *argv[]) {
 	glfwTerminate();
 	
 	// Shut down
-    system_poweroff();
-    system_shutdown();
+	system_poweroff();
+	system_shutdown();
 	return 0;
 }

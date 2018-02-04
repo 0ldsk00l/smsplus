@@ -36,7 +36,7 @@ uint32_t bp_lut[0x20000];
 
 #ifdef ALIGN_DWORD
 
-static __inline__ uint32_t read_dword(void *address)
+static inline uint32_t read_dword(void *address)
 {
     if ((uint32_t)address & 3)
 	{
@@ -57,7 +57,7 @@ static __inline__ uint32_t read_dword(void *address)
 }
 
 
-static __inline__ void write_dword(void *address, uint32_t data)
+static inline void write_dword(void *address, uint32_t data)
 {
     if ((uint32_t)address & 3)
 	{

@@ -3,7 +3,7 @@
 #define _SYSTEM_H_
 
 #define APP_NAME            "SMS Plus"
-#define APP_VERSION         "1.8"
+#define APP_VERSION         "1.9-git"
 
 #define PALETTE_SIZE        0x20
 
@@ -43,6 +43,7 @@ typedef struct
     uint8_t *rom;
     uint8_t pages;
     uint32_t crc;
+    char sha1[41];
     uint32_t sram_crc;
     int mapper;
     uint8_t sram[0x8000];
