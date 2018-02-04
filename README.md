@@ -13,7 +13,7 @@ make
 ```
 Options may be set in the .ini file. An example .ini file is included:
 ```
-cp smsplus.ini.default smsplus.ini
+cp shell/smsplus.ini.default smsplus.ini
 ```
 ```
 Usage: ./smsplus [FILE]
