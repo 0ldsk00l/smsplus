@@ -16,12 +16,18 @@ typedef struct {
 } rominfo_t;
 
 rominfo_t game_list[] = {
-    {0x29822980, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, "Cosmic Spacehead"},
-    {0xB9664AE1, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, "Fantastic Dizzy"},
-    {0xA577CE46, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, "Micro Machines"},
-    {0x8813514B, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, "Excellent Dizzy (Proto)"},
-    {0xAA140C9C, MAPPER_CODIES, DISPLAY_PAL, TERRITORY_EXPORT, "Excellent Dizzy (Proto - GG)"}, 
-    {-1        , -1  , -1, -1, NULL},
+    {0x17AB6883, MAPPER_NONE  , DISPLAY_NTSC, TERRITORY_EXPORT, "FA Tetris (KR)"                },
+    {0x61E8806F, MAPPER_NONE  , DISPLAY_NTSC, TERRITORY_EXPORT, "Flash Point (KR)"              },
+    {0x192949D5, MAPPER_KOREA2, DISPLAY_NTSC, TERRITORY_EXPORT, "Janggun-iuo Adeul (KR)"        },
+    {0xA05258F5, MAPPER_KOREA , DISPLAY_NTSC, TERRITORY_EXPORT, "Won-Si-In (KR)"                },
+    {0x83F0EEDE, MAPPER_KOREA , DISPLAY_NTSC, TERRITORY_EXPORT, "Street Master (KR)"            },
+    {0x445525E2, MAPPER_KOREA , DISPLAY_NTSC, TERRITORY_EXPORT, "Penguin Adventure (KR)"        },
+    {0x29822980, MAPPER_CODIES, DISPLAY_PAL,  TERRITORY_EXPORT, "Cosmic Spacehead"              },
+    {0xB9664AE1, MAPPER_CODIES, DISPLAY_PAL,  TERRITORY_EXPORT, "Fantastic Dizzy"               },
+    {0xA577CE46, MAPPER_CODIES, DISPLAY_PAL,  TERRITORY_EXPORT, "Micro Machines"                },
+    {0x8813514B, MAPPER_CODIES, DISPLAY_PAL,  TERRITORY_EXPORT, "Excellent Dizzy (Proto)"       },
+    {0xAA140C9C, MAPPER_CODIES, DISPLAY_PAL,  TERRITORY_EXPORT, "Excellent Dizzy (Proto - GG)"  }, 
+    {-1        , -1           , -1         ,  -1               , NULL                           },
 };
 
 int load_rom(char *filename)

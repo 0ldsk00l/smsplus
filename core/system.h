@@ -3,7 +3,7 @@
 #define _SYSTEM_H_
 
 #define APP_NAME            "SMS Plus"
-#define APP_VERSION         "1.3"
+#define APP_VERSION         "1.8"
 
 #define PALETTE_SIZE        0x20
 

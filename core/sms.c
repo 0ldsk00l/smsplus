@@ -10,6 +10,18 @@ sms_t sms;
 uint8_t dummy_write[0x400];
 uint8_t dummy_read[0x400];
 
+void read_map(uint8_t *src, int offset, int length)
+{
+    int index;
+    int page_shift = 10;
+    int page_count = (length >> page_shift) & 0x3F;
+
+    for(index = 0; index < page_count; index++)
+    {
+        cpu_readmap[(offset >> page_shift) | index] = &src[index << page_shift];
+    }
+}
+
 void writemem_mapper_none(int offset, int data)
 {
     cpu_writemap[offset >> 10][offset & 0x03FF] = data;
@@ -29,18 +41,98 @@ void writemem_mapper_codies(int offset, int data)
         case 0x0000:
             sms_mapper_w(1, data);
             return;
+            
         case 0x4000:
             sms_mapper_w(2, data);
             return;
+            
         case 0x8000:
             sms_mapper_w(3, data);
             return;
+            
         case 0xC000:
             cpu_writemap[offset >> 10][offset & 0x03FF] = data;
             return;
     }
 
 }
+
+void writemem_mapper_korea(int offset, int data)
+{
+    int i;
+    static const int bank_mask = 0x0F;
+    static const int bank_shift = 13;
+    static const int page_mask = 0x0F;
+    static const int page_shift = 10;
+    uint8_t *base = &cart.rom[(data & bank_mask) << bank_shift];
+
+    switch(offset)
+    {
+        /* 4-bit data written to 0000 maps 8K page to 8000-9FFF */
+        case 0x0000:
+            for(i = 0; i < 8; i++)
+            {
+                cpu_readmap[(0x8000 >> page_shift) + i] = \
+                    &base[(i & page_mask) << page_shift];
+            }
+            return;
+
+        /* 4-bit data written to 0001 maps 8K page to A000-BFFF */
+        case 0x0001:
+            for(i = 0; i < 8; i++)
+            {
+                cpu_readmap[(0xA000 >> page_shift) + i] = \
+                    &base[(i & page_mask) << page_shift];
+            }
+            return;
+
+        /* 4-bit data written to 0002 maps 8K page to 4000-5FFF */
+        case 0x0002:
+            for(i = 0; i < 8; i++)
+            {
+                cpu_readmap[(0x4000 >> page_shift) + i] = \
+                    &base[(i & page_mask) << page_shift];
+            }
+            return;
+
+        /* 4-bit data written to 0003 maps 8K page to 6000-7FFF */
+        case 0x0003:
+            for(i = 0; i < 8; i++)
+            {
+                cpu_readmap[(0x6000 >> page_shift) + i] = \
+                    &base[(i & page_mask) << page_shift];
+            }
+            return;
+    }
+
+    cpu_writemap[offset >> 10][offset & 0x03FF] = data;
+}
+
+void writemem_mapper_korea2(int offset, int data)
+{
+    int i;
+    static const int bank_mask = 0x3F;
+    static const int bank_shift = 13;
+    static const int page_shift = 10;
+    uint8_t *base = &cart.rom[(data & bank_mask) << bank_shift];
+
+    switch(offset)
+    {
+        case 0x4000: /* 6-bit data written to 4000 maps 8K page to 4000-5FFF */
+        case 0x6000: /* 6-bit data written to 6000 maps 8K page to 6000-7FFF */
+        case 0x8000: /* 6-bit data written to 8000 maps 8K page to 8000-9FFF */
+        case 0xA000: /* 6-bit data written to A000 maps 8K page to A000-BFFF */
+            for(i = 0; i < 8; i++)
+            {
+                cpu_readmap[(offset >> page_shift) + i] = \
+                    &base[(i & bank_mask) << page_shift];
+            }
+            return;
+    }
+
+    cpu_writemap[offset >> 10][offset & 0x03FF] = data;
+}
+
 
 void sms_init(void)
 {
@@ -53,9 +145,32 @@ void sms_init(void)
     data_bus_pulldown   = 0x00;
 
     /* Assign mapper */
-    cpu_writemem16 = writemem_mapper_sega;
-    if(cart.mapper == MAPPER_CODIES)
-        cpu_writemem16 = writemem_mapper_codies;
+    switch(cart.mapper)
+    {
+        case MAPPER_NONE:
+            cpu_writemem16 = writemem_mapper_none;
+            break;
+
+        case MAPPER_SEGA:
+            cpu_writemem16 = writemem_mapper_sega;
+            break;
+
+        case MAPPER_KOREA:
+            cpu_writemem16 = writemem_mapper_korea;
+            break;
+
+        case MAPPER_KOREA2:
+            cpu_writemem16 = writemem_mapper_korea2;
+            break;
+
+        case MAPPER_CODIES:
+            cpu_writemem16 = writemem_mapper_codies;
+            break;
+
+        default:
+            cpu_writemem16 = writemem_mapper_sega;
+            break;
+    }
 
     /* Force SMS (J) console type if FM sound enabled */
     if(sms.use_fm)

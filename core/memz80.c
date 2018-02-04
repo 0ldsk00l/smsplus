@@ -4,6 +4,10 @@
 */
 #include "shared.h"
 
+void (*cpu_writemem16)(int address, int data);
+void (*cpu_writeport16)(uint16_t port, uint8_t data);
+uint8_t (*cpu_readport16)(uint16_t port);
+
 /* Pull-up resistors on data bus */
 uint8_t data_bus_pullup   = 0x00;
 uint8_t data_bus_pulldown = 0x00;

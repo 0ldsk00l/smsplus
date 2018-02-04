@@ -1,13 +1,13 @@
 CC = cc
 LDFLAGS =
 FLAGS =	-Icore \
-		-Wall -g \
-		-DLSB_FIRST \
-		#-O3 -fomit-frame-pointer -ffast-math
+	-Wall -g \
+	-DLSB_FIRST \
+	#-O3 -fomit-frame-pointer -ffast-math
 
-LIBS = -lm -lz $(shell pkg-config --libs glfw3 epoxy ao)
+LIBS	=	-lm $(shell pkg-config --libs glfw3 epoxy ao)
 
-OBJ =	obj/z80.o	\
+OBJ	=	obj/z80.o \
 		obj/sms.o \
 		obj/pio.o \
 		obj/memz80.o \
@@ -18,9 +18,10 @@ OBJ =	obj/z80.o	\
 		obj/error.o
 
 OBJ	+=	obj/state.o	\
-		obj/loadrom.o
+		obj/loadrom.o \
+		obj/hash.o
 
-OBJ	+=  obj/sound.o \
+OBJ	+=	obj/sound.o \
 		obj/sn76489.o \
 		obj/emu2413.o \
 		obj/ym2413.o \

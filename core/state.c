@@ -115,5 +115,7 @@ void system_load_state(void *fd)
     /* Restore palette */
     for(i = 0; i < PALETTE_SIZE; i++)
         palette_sync(i, 1);
+
+    viewport_check();
 }
 

@@ -10,7 +10,6 @@
 #include <malloc.h>
 #include <math.h>
 #include <limits.h>
-#include <zlib.h>
 
 #ifndef PATH_MAX
 #ifdef  MAX_PATH
@@ -39,5 +38,6 @@
 
 #include "state.h"
 #include "loadrom.h"
+#include "hash.h"
 
 #endif /* _SHARED_H_ */

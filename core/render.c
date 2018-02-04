@@ -5,8 +5,6 @@
 
 #include "shared.h"
 
-#include "stdint.h"
-
 uint8_t sms_cram_expand_table[4];
 uint8_t gg_cram_expand_table[16];
 
@@ -21,28 +19,18 @@ uint8_t *linebuf;
 uint8_t internal_buffer[0x100];
 
 /* Precalculated pixel table */
-uint16_t pixel[PALETTE_SIZE];
+uint32_t pixel[PALETTE_SIZE];
 
 /* Dirty pattern info */
 uint8_t bg_name_dirty[0x200];     /* 1= This pattern is dirty */
 uint16_t bg_name_list[0x200];     /* List of modified pattern indices */
 uint16_t bg_list_index;           /* # of modified patterns in list */
-uint8_t bg_pattern_cache[0x20000];/* Cached and flipped patterns */
 
 /* Pixel look-up table */
 uint8_t lut[0x10000];
 
-/* Attribute expansion table */
-static const uint32_t atex[4] =
-{
-    0x00000000,
-    0x10101010,
-    0x20202020,
-    0x30303030,
-};
-
 /* Bitplane to packed pixel LUT */
-uint32_t bp_lut[0x10000];
+uint32_t bp_lut[0x20000];
 
 /* Macros to access memory 32-bits at a time (from MAME's drawgfx.c) */
 
@@ -184,15 +172,20 @@ void render_init(void)
     {
         int x;
         uint32_t out = 0;
+        uint32_t outr = 0;
         for(x = 0; x < 8; x++)
         {
-            out |= (j & (0x80 >> x)) ? (uint32_t)(8 << (x << 2)) : 0;
-            out |= (i & (0x80 >> x)) ? (uint32_t)(4 << (x << 2)) : 0;
+            out  |= (j & (0x80 >> (  x))) ? (uint32_t)(8 << (x << 2)) : 0;
+            out  |= (i & (0x80 >> (  x))) ? (uint32_t)(4 << (x << 2)) : 0;
+            outr |= (j & (0x80 >> (7-x))) ? (uint32_t)(8 << (x << 2)) : 0;
+            outr |= (i & (0x80 >> (7-x))) ? (uint32_t)(4 << (x << 2)) : 0;
         }
 #if LSB_FIRST
-        bp_lut[(j << 8) | (i)] = out;
+        bp_lut[0x00000 | (j << 8) | (i)] = out;
+        bp_lut[0x10000 | (j << 8) | (i)] = outr;
 #else
-        bp_lut[(i << 8) | (j)] = out;
+        bp_lut[0x00000 | (i << 8) | (j)] = out;
+        bp_lut[0x10000 | (i << 8) | (j)] = outr;
 #endif
     }
 
@@ -227,12 +220,6 @@ void render_reset(void)
         palette_sync(i, 1);
     }
 
-    /* Invalidate pattern cache */
-    memset(bg_name_dirty, 0, sizeof(bg_name_dirty));
-    memset(bg_name_list, 0, sizeof(bg_name_list));
-    bg_list_index = 0;
-    memset(bg_pattern_cache, 0, sizeof(bg_pattern_cache));
-
     /* Pick render routine */
     render_bg = render_bg_sms;
     render_obj = render_obj_sms;
@@ -247,10 +234,7 @@ void render_line(int line)
         return;
 
     /* Point to current line in output buffer */
-    linebuf = (bitmap.depth == 8) ? &bitmap.data[(line * bitmap.pitch)] : &internal_buffer[0];
-
-    /* Update pattern cache */
-    update_bg_pattern_cache();
+    linebuf = &internal_buffer[0];
 
     /* Blank line (full width) */
     if(!(vdp.reg[1] & 0x40))
@@ -274,9 +258,25 @@ void render_line(int line)
         }
     }
 
-    if(bitmap.depth != 8) remap_8_to_16(line);
+    remap_internal_to_host(line);
 }
 
+
+static inline uint32_t get_tile_row(uint16_t attr, int row)
+{
+    int tile_row = (attr & 0x0400) ? (row ^ 7) : (row);
+    uint32_t *bp_ptr = (attr & 0x200) ? &bp_lut[0x10000] : &bp_lut[0];
+    uint32_t key = *(uint32_t *)&vdp.vram[((attr & 0x01FF) << 5) | (tile_row << 2)];
+    uint32_t temp = bp_ptr[key & 0xFFFF] >> 2;
+    return temp | bp_ptr[key >> 16];
+}
+
+static inline uint32_t get_sprite_tile_row(uint16_t attr, int row)
+{
+    uint32_t key = *(uint32_t *)&vdp.vram[((attr & 0x01FF) << 5) | (row << 2)];
+    uint32_t temp = bp_lut[key & 0xFFFF] >> 2;
+    return temp | bp_lut[key >> 16];
+}
 
 /* Draw the Master System background */
 void render_bg_sms(int line)
@@ -284,27 +284,25 @@ void render_bg_sms(int line)
     int locked = 0;
     int yscroll_mask = (vdp.extended) ? 256 : 224;
     int v_line = (line + vdp.reg[9]) % yscroll_mask;
-    int v_row  = (v_line & 7) << 3;
+    int v_row  = (v_line & 7);
     int hscroll = ((vdp.reg[0] & 0x40) && (line < 0x10)) ? 0 : (0x100 - vdp.reg[8]);
     int column = 0;
     uint16_t attr;
     uint16_t *nt = (uint16_t *)&vdp.vram[vdp.ntab + ((v_line >> 3) << 6)];
     int nt_scroll = (hscroll >> 3);
     int shift = (hscroll & 7);
-    uint32_t atex_mask;
-    uint32_t *cache_ptr;
-    uint32_t *linebuf_ptr = (uint32_t *)&linebuf[0 - shift];
+    uint8_t *linebuf_ptr = (uint8_t *)&linebuf[0 - shift];
 
     /* Draw first column (clipped) */
     if(shift)
     {
         int x;
-
         for(x = shift; x < 8; x++)
             linebuf[(0 - shift) + (x)] = 0;
-
         column++;
     }
+    
+    linebuf_ptr = &linebuf_ptr[(column << 3)];
 
     /* Draw a line of the background */
     for(; column < 32; column++)
@@ -313,7 +311,7 @@ void render_bg_sms(int line)
         if((vdp.reg[0] & 0x80) && (!locked) && (column >= 24))
         {
             locked = 1;
-            v_row = (line & 7) << 3;
+            v_row = (line & 7);
             nt = (uint16_t *)&vdp.vram[((vdp.reg[2] << 10) & 0x3800) + ((line >> 3) << 6)];
         }
 
@@ -323,37 +321,36 @@ void render_bg_sms(int line)
 #ifndef LSB_FIRST
         attr = (((attr & 0xFF) << 8) | ((attr & 0xFF00) >> 8));
 #endif
-        /* Expand priority and palette bits */
-        atex_mask = atex[(attr >> 11) & 3];
+        uint8_t atex = ((attr >> 11) & 3) << 4;
+        uint32_t temp = get_tile_row(attr, v_row);
 
-        /* Point to a line of pattern data in cache */
-        cache_ptr = (uint32_t *)&bg_pattern_cache[((attr & 0x7FF) << 6) | (v_row)];
-        
-        /* Copy the left half, adding the attribute bits in */
-        write_dword( &linebuf_ptr[(column << 1)] , read_dword( &cache_ptr[0] ) | (atex_mask));
-
-        /* Copy the right half, adding the attribute bits in */
-        write_dword( &linebuf_ptr[(column << 1) | (1)], read_dword( &cache_ptr[1] ) | (atex_mask));
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex; temp >>= 4;
+        *linebuf_ptr++ = (temp & 0x0F) | atex;
     }
 
     /* Draw last column (clipped) */
     if(shift)
     {
-        int x, c, a;
-
-        uint8_t *p = &linebuf[(0 - shift)+(column << 3)];
-
+        int x;
+        uint8_t *p = &linebuf[(0 - shift) + (column << 3)];
         attr = nt[(column + nt_scroll) & 0x1F];
 
 #ifndef LSB_FIRST
         attr = (((attr & 0xFF) << 8) | ((attr & 0xFF00) >> 8));
 #endif
-        a = (attr >> 7) & 0x30;
+        uint8_t atex = ((attr >> 11) & 3) << 4;
+        uint32_t temp = get_tile_row(attr, v_row);
 
         for(x = 0; x < shift; x++)
         {
-            c = bg_pattern_cache[((attr & 0x7FF) << 6) | (v_row) | (x)];
-            p[x] = ((c) | (a));
+            p[x] = (temp & 0x0F) | atex;
+            temp >>= 4;
         }
     }
 }
@@ -452,14 +449,21 @@ void render_obj_sms(int line)
             /* Draw double size sprite */
             if(vdp.reg[1] & 0x01)
             {
+                int toggle = 0;
                 int x;
-                uint8_t *cache_ptr = (uint8_t *)&bg_pattern_cache[(n << 6) | (((line - yp) >> 1) << 3)];
+                uint32_t temp = get_sprite_tile_row(n, (line - yp) >> 1);
+
+                /* Pre-shift line */
+                temp >>= ((start >> 1) << 2);
 
                 /* Draw sprite line */
                 for(x = start; x < end; x++)
                 {
-                    /* Source pixel from cache */
-                    uint8_t sp = cache_ptr[(x >> 1)];
+                    /* Source pixel */
+                    uint8_t sp = (temp & 0x0F);
+                    if(toggle)
+                        temp >>= 4;
+                    toggle ^= 1;
     
                     /* Only draw opaque sprite pixels */
                     if(sp)
@@ -478,13 +482,17 @@ void render_obj_sms(int line)
             else /* Regular size sprite (8x8 / 8x16) */
             {
                 int x;
-                uint8_t *cache_ptr = (uint8_t *)&bg_pattern_cache[(n << 6) | ((line - yp) << 3)];
+                uint32_t temp = get_sprite_tile_row(n, line - yp);
+
+                /* Pre-shift line */
+                temp >>= (start << 2);
 
                 /* Draw sprite line */
                 for(x = start; x < end; x++)
                 {
-                    /* Source pixel from cache */
-                    uint8_t sp = cache_ptr[x];
+                    /* Source pixel */
+                    uint8_t sp = (temp & 0x0F);
+                    temp >>= 4;
     
                     /* Only draw opaque sprite pixels */
                     if(sp)
@@ -506,46 +514,6 @@ end:
     /* Set sprite collision flag */
     if(collision_buffer & 0x40)
         vdp.status |= 0x20;
-}
-
-
-
-void update_bg_pattern_cache(void)
-{
-    int i;
-    uint8_t x, y;
-    uint16_t name;
-
-    if(!bg_list_index) return;
-
-    for(i = 0; i < bg_list_index; i++)
-    {
-        name = bg_name_list[i];
-        bg_name_list[i] = 0;
-
-        for(y = 0; y < 8; y++)
-        {
-            if(bg_name_dirty[name] & (1 << y))
-            {
-                uint8_t *dst = &bg_pattern_cache[name << 6];
-
-                uint16_t bp01 = *(uint16_t *)&vdp.vram[(name << 5) | (y << 2) | (0)];
-                uint16_t bp23 = *(uint16_t *)&vdp.vram[(name << 5) | (y << 2) | (2)];
-                uint32_t temp = (bp_lut[bp01] >> 2) | (bp_lut[bp23]);
-
-                for(x = 0; x < 8; x++)
-                {
-                    uint8_t c = (temp >> (x << 2)) & 0x0F;
-                    dst[0x00000 | (y << 3) | (x)] = (c);
-                    dst[0x08000 | (y << 3) | (x ^ 7)] = (c);
-                    dst[0x10000 | ((y ^ 7) << 3) | (x)] = (c);
-                    dst[0x18000 | ((y ^ 7) << 3) | (x ^ 7)] = (c);
-                }
-            }
-        }
-        bg_name_dirty[name] = 0;
-    }
-    bg_list_index = 0;
 }
 
 
@@ -583,20 +551,14 @@ void palette_sync(int index, int force)
         g = sms_cram_expand_table[g];
         b = sms_cram_expand_table[b];
     }
-    
-    bitmap.pal.color[index][0] = r;
-    bitmap.pal.color[index][1] = g;
-    bitmap.pal.color[index][2] = b;
 
     pixel[index] = MAKE_PIXEL(r, g, b);
-
-    bitmap.pal.dirty[index] = bitmap.pal.update = 1;
 }
 
-void remap_8_to_16(int line)
+void remap_internal_to_host(int line)
 {
     int i;
-    uint16_t *p = (uint16_t *)&bitmap.data[(line * bitmap.pitch)];
+    uint32_t *p = (uint32_t *)&bitmap.data[(line * bitmap.pitch)];
     for(i = bitmap.viewport.x; i < bitmap.viewport.w + bitmap.viewport.x; i++)
     {
         p[i] = pixel[ internal_buffer[i] & PIXEL_MASK ];

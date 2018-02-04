@@ -62,9 +62,9 @@ extern int after_EI;
 extern unsigned char *cpu_readmap[64];
 extern unsigned char *cpu_writemap[64];
 
-void (*cpu_writemem16)(int address, int data);
-void (*cpu_writeport16)(uint16_t port, uint8_t data);
-uint8_t (*cpu_readport16)(uint16_t port);
+extern void (*cpu_writemem16)(int address, int data);
+extern void (*cpu_writeport16)(uint16_t port, uint8_t data);
+extern uint8_t (*cpu_readport16)(uint16_t port);
 
 void z80_reset_cycle_count(void);
 int z80_get_elapsed_cycles(void);

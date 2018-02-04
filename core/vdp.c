@@ -13,6 +13,7 @@ static const uint8_t tms_crom[] =
     0x04, 0x33, 0x15, 0x3F
 };
 
+
 /* Mark a pattern as dirty */
 #define MARK_BG_DIRTY(addr)                                \
 {                                                          \
@@ -41,6 +42,26 @@ void vdp_shutdown(void)
     /* Nothing to do */
 }
 
+void set_tms_palette(void)
+{
+	int i;
+	
+    /* Load TMS9918 palette */
+    for(i = 0; i < PALETTE_SIZE; i++)
+    {
+        int r, g, b;
+
+        r = (tms_crom[i & 0x0F] >> 0) & 3;
+        g = (tms_crom[i & 0x0F] >> 2) & 3;
+        b = (tms_crom[i & 0x0F] >> 4) & 3;
+
+        r = sms_cram_expand_table[r];
+        g = sms_cram_expand_table[g];
+        b = sms_cram_expand_table[b];
+
+        pixel[i] = MAKE_PIXEL(r, g, b);
+	}
+}
 
 /* Reset VDP emulation */
 void vdp_reset(void)
@@ -54,6 +75,8 @@ void vdp_reset(void)
     bitmap.viewport.w = (IS_GG) ? 160 : 256;
     bitmap.viewport.h = (IS_GG) ? 144 : 192;
     bitmap.viewport.changed = 1;
+
+    set_tms_palette();
 }
 
 
@@ -81,27 +104,7 @@ void viewport_check(void)
         }
         else
         {
-            /* Load TMS9918 palette */
-            for(i = 0; i < PALETTE_SIZE; i++)
-            {
-                int r, g, b;
-    
-                r = (tms_crom[i & 0x0F] >> 0) & 3;
-                g = (tms_crom[i & 0x0F] >> 2) & 3;
-                b = (tms_crom[i & 0x0F] >> 4) & 3;
-        
-                r = sms_cram_expand_table[r];
-                g = sms_cram_expand_table[g];
-                b = sms_cram_expand_table[b];
-            
-                bitmap.pal.color[i][0] = r;
-                bitmap.pal.color[i][1] = g;
-                bitmap.pal.color[i][2] = b;
-            
-                pixel[i] = MAKE_PIXEL(r, g, b);
-            
-                bitmap.pal.dirty[i] = bitmap.pal.update = 1;
-            }
+        	set_tms_palette();
         }
     }
 
