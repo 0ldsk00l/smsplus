@@ -1,3 +1,9 @@
+smsplus
+obj/*
+roms/*
+roms
+screenshots/*
 *.sms
 *.gg
 *.ini
+*.st?
