@@ -1,3 +1,37 @@
+ [Current]
+
+ - Removed the dependency on zlib, and replaced crc32 function with internal one.
+ - Removed DOS and Windows ports.
+ - Changed most of the variables in the codebase to stdint.h types to avoid
+   problems running on diverse architectures.
+ - Removed x86 assembly and the option for faster but less accurate code blocks from the CPU core.
+ - Created a cross-platform port using GLFW.
+ - Moved all core source code to one directory, and removed stale files and other garbage.
+ - Fixed a bug where the TMS palette is set up by default as SMS programs that use TMS modes
+   exclusively never transition in to or out of mode 4.
+ - Changed renderer to support 32-bit output only. Though if you need to change this behavior
+   just update the remap_internal_to_host function and pixel[] array and MAKE_PIXEL macros in render.c
+   and render.h.
+ - This version is an amalgamation of Charles MacDonald's changes for his
+   version 1.8 as well as the changes done for this fork.
+
+ [1.5]
+
+ - Fixed a save state load error. (Thanks to Akop Karapetyan for reporting
+   the bug)
+ - Added preliminary support for "Janggun-ui Adeul" (Thanks to Omar Cornut
+   for the dump and technical information).
+
+ [1.4]
+
+ - Added support for 32K and 8KB-banked Korean games. (Thanks to Omar Cornut
+   for the dump and technical information)
+ - Removed support for 8-bit color.
+ - Removed tile cache for Mode 4. Note to porters: new rendering code
+   could potentially have endian or unaligned memory access issues.
+ - The DOS port is no longer being maintained and will be removed
+   in a future version.
+
  [1.3]
 
  - Fixed last entry in CRC lookup table.
@@ -108,3 +142,50 @@
  - Made SMS/GG palette brighter.
  - Fixed leftmost column drawing in SMS mode.
  - Upgraded Z80 CPU emulator from V2.7 to V3.3.
+
+ [Version 0.9.4a]
+
+ - A few cleanups so SMS Plus compiles with no errors or warnings.
+ - Use of MMX code is now automatic but can still be disabled manually.
+ - Replaced FM sound emulation with Mitsutaka Okazaki's EMU2413 library.
+ - Fixed parts of the VDP emulation.
+ - Removed support for PSX port.
+
+ [Version 0.9.3]
+
+ - Stereo Game Gear sound.
+ - Save states, 10 per game.
+ - Sound logging, output is .GYM compatible.
+ - Optimized memory access for improved speed.
+ - Screen snapshots in PCX format.
+ - Stereo swap option for left and right speakers.
+ - Added FPS meter.
+ - Added some option toggle keys for in-game configuration.
+ - Definable video driver.
+ - Tweaked display modes for full-screen gameplay.
+ - More of the usual internal changes and bug fixes.
+
+ [Version 0.9.2]
+
+ - Digital YM2413 FM sound emulation. Drums sound real good, too.
+ - System territory switch, default is overseas (Europe / USA)
+ - Made some internal changes and clean-ups to the source code.
+ - Revised document on porting to be actually useful.
+ - Adjusted version number to stay in sync with the Macintosh port.
+ - Support for ZIPped game images and games with 512-byte headers.
+ - Screen expansion now works for 16-bit displays.
+ - Fixed some centering problems with screen expansion on GG games.
+ - Sound output using SEAL should be a bit clearer.
+ - Configuration file support.
+
+ [Version 0.9]
+
+ Everything has been rewritten from scratch. The emulation is much more
+ accurate, as a result compatability has improved greatly.
+
+ The DOS port has a lot of nice features added, including 16-bit color,
+ display blurring, digital sound emulation, and scanlines, which were the
+ most requested items.
+
+ Also new is a Sony Playstation port, though it's highly experimental
+ and has some serious performance issues.
