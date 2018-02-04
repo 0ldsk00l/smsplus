@@ -51,8 +51,8 @@ void ogl_render() {
 				VIDEO_WIDTH_SMS,
 				VIDEO_HEIGHT_SMS,
 				0,
-				GL_RGB,
-				GL_UNSIGNED_SHORT_5_6_5,
+				GL_BGRA,
+				GL_UNSIGNED_BYTE,
 		pixels);
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);

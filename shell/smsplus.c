@@ -270,13 +270,13 @@ int main (int argc, char *argv[]) {
 	if (err.type != GB_INI_ERROR_NONE) { return 1; }
 	
 	// Create video buffer
-	pixels = calloc(VIDEO_WIDTH_SMS * VIDEO_HEIGHT_SMS * 2, 1);
+	pixels = calloc(VIDEO_WIDTH_SMS * VIDEO_HEIGHT_SMS * 4, 1);
 	
 	// Set parameters for internal bitmap
 	bitmap.width = VIDEO_WIDTH_SMS;
 	bitmap.height = VIDEO_HEIGHT_SMS;
-	bitmap.depth = 16;
-	bitmap.granularity = 2;
+	bitmap.depth = 32;
+	bitmap.granularity = 4;
 	bitmap.data = pixels;
 	bitmap.pitch = (bitmap.width * bitmap.granularity);
 	bitmap.viewport.w = VIDEO_WIDTH_SMS;
