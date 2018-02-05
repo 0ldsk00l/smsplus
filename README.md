@@ -4,7 +4,7 @@ Charles MacDonald's SMS Plus. The goal of this project is to be useful
 to homebrewers or emulator developers who need a simple reference
 Sega Master System/Game Gear emulator for testing.
 
-Currently runs on Linux, macOS, and BSD.
+Currently runs on Linux, macOS, BSD, and Windows.
 
 #### Compiling
 You will require GLFW3, libepoxy, and libao to build.

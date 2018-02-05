@@ -5,6 +5,10 @@ FLAGS =	-Icore \
 	-DLSB_FIRST \
 	#-O3 -fomit-frame-pointer -ffast-math
 
+ifeq ($(OS),Windows_NT)
+	FLAGS += -D_MINGW
+endif
+
 LIBS	=	-lm $(shell pkg-config --libs glfw3 epoxy ao)
 
 OBJ	=	obj/z80.o \

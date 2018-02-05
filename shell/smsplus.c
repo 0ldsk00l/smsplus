@@ -247,7 +247,11 @@ static void smsp_gamedata_set(char *filename) {
 	
 	// Set up the sram directory
 	snprintf(gdata.sramdir, sizeof(gdata.sramdir), "sram/");
-	if (mkdir(gdata.sramdir, 0755) && errno != EEXIST) {	
+#ifdef _MINGW
+	if (mkdir(gdata.sramdir) && errno != EEXIST) {
+#else
+	if (mkdir(gdata.sramdir, 0755) && errno != EEXIST) {
+#endif
 		fprintf(stderr, "Failed to create %s: %d\n", gdata.sramdir, errno);
 	}
 	
@@ -256,12 +260,20 @@ static void smsp_gamedata_set(char *filename) {
 	
 	// Set up the state directory
 	snprintf(gdata.stdir, sizeof(gdata.stdir), "state/");
-	if (mkdir(gdata.stdir, 0755) && errno != EEXIST) {	
+#ifdef _MINGW
+	if (mkdir(gdata.stdir) && errno != EEXIST) {
+#else
+	if (mkdir(gdata.stdir, 0755) && errno != EEXIST) {
+#endif
 		fprintf(stderr, "Failed to create %s: %d\n", gdata.stdir, errno);
 	}
 	
 	// Set up the screenshot directory
-	if (mkdir("screenshots/", 0755) && errno != EEXIST) {	
+#ifdef _MINGW
+	if (mkdir("screenshots/") && errno != EEXIST) {
+#else
+	if (mkdir("screenshots/", 0755) && errno != EEXIST) {
+#endif
 		fprintf(stderr, "Failed to create %s: %d\n", "screenshots/", errno);
 	}
 }
@@ -343,6 +355,7 @@ int main (int argc, char *argv[]) {
 	// If the window can't be created, kill the program
 	if (!window) {
 		glfwTerminate();
+		fprintf(stderr, "Error: Failed to create window.\n");
 		return -1;
 	}
 	
