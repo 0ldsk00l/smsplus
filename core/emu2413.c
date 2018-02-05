@@ -1618,8 +1618,6 @@ void OPLL_update(OPLL *opll, int16_t **buffer, int length)
 
       instout = ((inst) * opll->masterVolume ) >> 1 ;
       percout = ((perc) * opll->masterVolume ) >> 1 ;
-      if (instout != 0x00) { printf("instout nonzero\n"); }
-      if (percout != 0x00) { printf("percout nonzero\n"); }
 
     if(instout>32767) instout = 32767 ;
     if(instout<-32768) instout = -32768 ;
@@ -1629,8 +1627,5 @@ void OPLL_update(OPLL *opll, int16_t **buffer, int length)
 
         buffer[0][j] = (int16_t)instout ;
         buffer[1][j] = (int16_t)percout ;
-        
-        if (buffer[0][j] != 0x00) { printf("Buf0 nonzero\n"); }
-		if (buffer[1][j] != 0x00) { printf("Buf1 nonzero\n"); }
     }
 }

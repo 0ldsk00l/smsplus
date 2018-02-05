@@ -288,7 +288,7 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 	
-	fprintf(stdout, "CRC : %X\n", cart.crc);
+	fprintf(stdout, "CRC : %08X\n", cart.crc);
 	fprintf(stdout, "SHA1: %s\n", cart.sha1);
 	
 	// Set defaults
@@ -327,12 +327,11 @@ int main (int argc, char *argv[]) {
 	snd.sample_rate = settings.audio_rate;
 	snd.mixer_callback = NULL;
 	
-	// Initialize all systems and power on
-	system_init();
-	
 	sms.territory = settings.misc_region;
 	sms.use_fm = settings.audio_fm;
 	
+	// Initialize all systems and power on
+	system_init();
 	system_poweron();
 	
 	// Initialize GLFW

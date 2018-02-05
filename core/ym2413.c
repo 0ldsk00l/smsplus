@@ -2150,8 +2150,6 @@ void YM2413UpdateOne(int which, int16_t **buffers, int length)
 		/* store to sound buffer */
 		bufMO[i] = mo;
 		bufRO[i] = ro;
-if (bufMO[i] != 0x00) { printf("Buf0 nonzero\n"); }
-if (bufRO[i] != 0x00) { printf("Buf1 nonzero\n"); }
 		advance(chip);
 	}
 
