@@ -10,6 +10,7 @@ typedef struct {
 
 typedef struct {
 	int video_scale;
+	int video_filter;
 	int audio_rate;
 	int audio_fm;
 	int audio_fmtype;

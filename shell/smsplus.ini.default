@@ -1,6 +1,8 @@
 [video]
 ; Video scale multiplier
 scale = 2
+; Bilinear Filter: 0 = off, 1 = on
+filter = 0
 
 [audio]
 ; Sample Rate: 22050, 44100, 48000

@@ -222,6 +222,7 @@ static GB_INI_HANDLER(smsp_ini_handler) {
 //const *data, char const *section, char const *name, char const *value
 	#define TEST(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
 	if (TEST("video", "scale")) { settings.video_scale = atoi(value); }
+	else if (TEST("video", "filter")) { settings.video_filter = atoi(value); }
 	else if (TEST("audio", "rate")) { settings.audio_rate = atoi(value); }
 	else if (TEST("audio", "fm")) { settings.audio_fm = atoi(value); }
 	else if (TEST("audio", "fmtype")) { settings.audio_fmtype = atoi(value); }
@@ -305,6 +306,7 @@ int main (int argc, char *argv[]) {
 	
 	// Set defaults
 	settings.video_scale = 2;
+	settings.video_filter = 0;
 	settings.audio_rate = 48000;
 	settings.audio_fm = 1;
 	settings.audio_fmtype = SND_EMU2413;
