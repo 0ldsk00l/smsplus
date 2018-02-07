@@ -7,12 +7,14 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include "shared.h"
+
 #include "smsplus.h"
 #include "video.h"
 
 unsigned char *pixels;
 
-static int windowwidth, windowheight;
+static int renderwidth, renderheight;
 
 // Shader sources
 static const GLchar* vshader_src =
@@ -41,6 +43,8 @@ static GLuint fshader;
 static GLuint gl_shader_prog = 0;
 static GLuint gl_texture_id = 0;
 
+static int ggoffset[2] = {0,0};
+
 extern settings_t settings;
 
 void ogl_render() {
@@ -53,7 +57,7 @@ void ogl_render() {
 				0,
 				GL_BGRA,
 				GL_UNSIGNED_BYTE,
-		pixels);
+		pixels + ggoffset[0]);
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -124,10 +128,15 @@ void ogl_init() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
-	windowwidth = VIDEO_WIDTH_SMS * settings.video_scale;
-	windowheight = VIDEO_HEIGHT_SMS * settings.video_scale;
+	renderwidth = VIDEO_WIDTH_SMS * settings.video_scale;
+	renderheight = VIDEO_HEIGHT_SMS * settings.video_scale;
 	
-	glViewport(0, 0, windowwidth, windowheight);
+	if (sms.console == CONSOLE_GG) {
+		ggoffset[0] = VIDEO_HEIGHT_SMS;
+		ggoffset[1] = 24 * settings.video_scale;
+	}
+	
+	glViewport(0, 0 - ggoffset[1], renderwidth, renderheight);
 	
 	glUniform1i(glGetUniformLocation(gl_shader_prog, "gametex"), 0);
 }
@@ -160,12 +169,24 @@ static void smsp_video_screenshot_flip(unsigned char *pixbuf, int width, int hei
 
 void smsp_video_screenshot(const char* filename) {
 	// Take a screenshot in .png format
+	
+	int sswidth, ssheight;
+	
+	if (sms.console == CONSOLE_GG) {
+		sswidth = VIDEO_WIDTH_GG * settings.video_scale;
+		ssheight = VIDEO_HEIGHT_GG * settings.video_scale;
+	}
+	else {
+		sswidth = renderwidth;
+		ssheight = renderheight;
+	}
+	
 	unsigned char *pixbuf;
-	pixbuf = malloc(sizeof(uint32_t) * windowwidth * windowheight);
+	pixbuf = malloc(sizeof(uint32_t) * sswidth * ssheight);
 	
 	// Read the pixels and flip them vertically
-	glReadPixels(0, 0, windowwidth, windowheight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixbuf);
-	smsp_video_screenshot_flip(pixbuf, windowwidth, windowheight, 4);
+	glReadPixels(0, 0, sswidth, ssheight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixbuf);
+	smsp_video_screenshot_flip(pixbuf, sswidth, ssheight, 4);
 	
 	static int sshotnum = 1;
 	
@@ -176,11 +197,11 @@ void smsp_video_screenshot(const char* filename) {
 		sshotnum++;
 		
 		// Save the file
-		stbi_write_png(sshotpath, windowwidth, windowheight, 4, (const void *)pixbuf, 4 * windowwidth);
+		stbi_write_png(sshotpath, sswidth, ssheight, 4, (const void *)pixbuf, 4 * sswidth);
 		fprintf(stderr, "Screenshot: %s\n", sshotpath);
 	}
 	else {
-		stbi_write_png(filename, windowwidth, windowheight, 4, (const void *)pixbuf, 4 * windowwidth);
+		stbi_write_png(filename, sswidth, ssheight, 4, (const void *)pixbuf, 4 * sswidth);
 	}
 	
 	free(pixbuf);

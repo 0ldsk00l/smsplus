@@ -340,7 +340,7 @@ int main (int argc, char *argv[]) {
 	snd.mixer_callback = NULL;
 	
 	sms.territory = settings.misc_region;
-	sms.use_fm = settings.audio_fm;
+	if (sms.console != CONSOLE_GG) { sms.use_fm = settings.audio_fm; }
 	
 	// Initialize all systems and power on
 	system_init();
@@ -349,8 +349,15 @@ int main (int argc, char *argv[]) {
 	// Initialize GLFW
 	if (!glfwInit()) { return -1; }
 	
+	int windowwidth = VIDEO_WIDTH_SMS * settings.video_scale;
+	int windowheight = VIDEO_HEIGHT_SMS * settings.video_scale;
+	if (sms.console == CONSOLE_GG) {
+		windowwidth = VIDEO_WIDTH_GG * settings.video_scale;
+		windowheight = VIDEO_HEIGHT_GG * settings.video_scale;
+	}
+	
 	// Create a windowed mode window and its OpenGL context
-	window = glfwCreateWindow(VIDEO_WIDTH_SMS * settings.video_scale, VIDEO_HEIGHT_SMS * settings.video_scale, APP_NAME, NULL, NULL);
+	window = glfwCreateWindow(windowwidth, windowheight, APP_NAME, NULL, NULL);
 	
 	// If the window can't be created, kill the program
 	if (!window) {
@@ -373,7 +380,7 @@ int main (int argc, char *argv[]) {
 	while (!glfwWindowShouldClose(window)) {
 		// Output audio
 		audio_play();
-		//printf("Got here\n");
+		
 		// Refresh video data
 		bitmap.data = pixels;
 		
