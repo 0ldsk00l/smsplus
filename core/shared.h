@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <signal.h>
-#include <malloc.h>
 #include <math.h>
 #include <limits.h>
 
