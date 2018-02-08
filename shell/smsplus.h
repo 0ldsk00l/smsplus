@@ -15,6 +15,7 @@ typedef struct {
 	int audio_fm;
 	int audio_fmtype;
 	int misc_region;
+	int misc_ffspeed;
 } settings_t;
 
 void smsp_state(int slot, int mode);

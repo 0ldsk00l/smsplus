@@ -26,7 +26,7 @@ static ao_device *aodevice;
 static ao_sample_format aoformat;
 static int16_t audiobuf[96000];
 
-static int skip = 0;
+static int frames = 1;
 
 extern unsigned char *pixels;
 
@@ -71,6 +71,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	// Emulator
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE); // Exit
+	}
+	if (key == GLFW_KEY_GRAVE_ACCENT) {
+		if (action == GLFW_PRESS) { frames = settings.misc_ffspeed; }
+		else if (action == GLFW_RELEASE) { frames = 1; }
 	}
 	/*if (key == GLFW_KEY_F5 && action == GLFW_PRESS) {
 		smsp_state(0, 0); // Save Slot 0
@@ -227,6 +231,7 @@ static GB_INI_HANDLER(smsp_ini_handler) {
 	else if (TEST("audio", "fm")) { settings.audio_fm = atoi(value); }
 	else if (TEST("audio", "fmtype")) { settings.audio_fmtype = atoi(value); }
 	else if (TEST("misc", "region")) { settings.misc_region = atoi(value); }
+	else if (TEST("misc", "ffspeed")) { settings.misc_ffspeed = atoi(value); }
 	else { return 0; }
 	#undef TEST
 	return 1;
@@ -311,6 +316,7 @@ int main (int argc, char *argv[]) {
 	settings.audio_fm = 1;
 	settings.audio_fmtype = SND_EMU2413;
 	settings.misc_region = TERRITORY_DOMESTIC;
+	settings.misc_ffspeed = 2;
 	
 	// Override settings set in the .ini
 	gbIniError err = gb_ini_parse("smsplus.ini", &smsp_ini_handler, &settings);
@@ -386,8 +392,8 @@ int main (int argc, char *argv[]) {
 		// Refresh video data
 		bitmap.data = pixels;
 		
-		// Execute a frame
-		system_frame(skip);
+		// Execute frame(s)
+		for (int i = 0; i < frames; i++) { system_frame(0); }
 		
 		// Render/Blit the Frame
 		ogl_render();

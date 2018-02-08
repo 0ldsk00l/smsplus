@@ -17,3 +17,5 @@ fmtype = 0
 [misc]
 ; Region: 0 = Domestic (Japan), 1 = Overseas (Non-Japan)
 region = 0
+; Fast-Forward Speed Multiplier
+ffspeed = 2
