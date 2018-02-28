@@ -33,60 +33,6 @@ void memctrl_w(uint8_t data)
 
 void sms_port_w(uint16_t port, uint8_t data)
 {
-    switch(port & 0xC1)
-    {
-        case 0x00:
-            memctrl_w(data);
-            return;
-
-        case 0x01:
-            ioctrl_w(data);
-            return;
-
-        case 0x40:
-        case 0x41:
-            psg_write(data);
-            return;
-
-        case 0x80:
-        case 0x81:
-            vdp_write(port, data);
-            return;
-
-        case 0xC0:
-        case 0xC1:
-            return;
-    }
-}
-
-uint8_t sms_port_r(uint16_t port)
-{
-    switch(port & 0xC0)
-    {
-        case 0x00:
-            return z80_read_unmapped();
-
-        case 0x40:
-            return vdp_counter_r(port);
-
-        case 0x80:
-            return vdp_read(port);
-
-        case 0xC0:
-            return input_r(port);
-    }
-
-    /* Just to please the compiler */
-    return -1;
-}
-
-
-/*--------------------------------------------------------------------------*/
-/* Sega Master System (J) port handlers                                     */
-/*--------------------------------------------------------------------------*/
-
-void smsj_port_w(uint16_t port, uint8_t data)
-{
     port &= 0xFF;
 
     if(port >= 0xF0)
@@ -133,7 +79,7 @@ void smsj_port_w(uint16_t port, uint8_t data)
     }
 }
 
-uint8_t smsj_port_r(uint16_t port)
+uint8_t sms_port_r(uint16_t port)
 {
     port &= 0xFF;
 

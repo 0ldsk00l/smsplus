@@ -172,25 +172,12 @@ void sms_init(void)
             break;
     }
 
-    /* Force SMS (J) console type if FM sound enabled */
-    if(sms.use_fm)
-    {
-        sms.console = CONSOLE_SMSJ;
-        sms.territory = TERRITORY_DOMESTIC;
-        sms.display = DISPLAY_NTSC;
-    }
-
     /* Initialize selected console emulation */
     switch(sms.console)
     {
         case CONSOLE_SMS:
             cpu_writeport16 = sms_port_w;
             cpu_readport16 = sms_port_r;
-            break;
-
-        case CONSOLE_SMSJ:
-            cpu_writeport16 = smsj_port_w;
-            cpu_readport16 = smsj_port_r;
             break;
   
         case CONSOLE_SMS2:

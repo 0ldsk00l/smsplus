@@ -14,8 +14,6 @@ void ggms_port_w(uint16_t port, uint8_t data);
 uint8_t ggms_port_r(uint16_t port);
 void sms_port_w(uint16_t port, uint8_t data);
 uint8_t sms_port_r(uint16_t port);
-void smsj_port_w(uint16_t port, uint8_t data);
-uint8_t smsj_port_r(uint16_t port);
 void md_port_w(uint16_t port, uint8_t data);
 uint8_t md_port_r(uint16_t port);
 
