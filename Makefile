@@ -1,9 +1,9 @@
 CC = cc
 LDFLAGS =
+CFLAGS = -g
 FLAGS =	-Icore \
-	-Wall -g \
+	-Wall \
 	-DLSB_FIRST \
-	#-O3 -fomit-frame-pointer -ffast-math
 
 ifeq ($(OS),Windows_NT)
 	FLAGS += -D_MINGW
@@ -42,10 +42,10 @@ smsplus: $(OBJ)
 
 obj/%.o: core/%.c core/%.h
 		@mkdir -p obj/
-		$(CC) -c $< -o $@ $(FLAGS)
+		$(CC) -c $< -o $@ $(CFLAGS) $(FLAGS)
 
 obj/%.o: shell/%.c shell/%.h
-		$(CC) -c $< -o $@ $(FLAGS)
+		$(CC) -c $< -o $@ $(CFLAGS) $(FLAGS)
 
 clean:
 	rm -f obj/*.o
