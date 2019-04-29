@@ -7,7 +7,7 @@ Sega Master System/Game Gear emulator for testing.
 Currently runs on Linux, macOS, BSD, and Windows.
 
 #### Compiling
-You will require GLFW3, libepoxy, and libao to build.
+You will require GLFW3, and libepoxy to build.
 ```
 make
 ```
