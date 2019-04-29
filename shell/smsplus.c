@@ -81,14 +81,13 @@ settings_t *smsp_settings_ptr() { return &settings; }
 static void ma_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
 	(void)pInput; // Don't take input
 	
-	pthread_mutex_lock(&mutex);
-	int sampsout = aq.qsize < frameCount ? aq.qsize : frameCount;
+	if (aq.qsize < frameCount * CHANNELS) { return; }
 	
+	pthread_mutex_lock(&mutex);
 	int16_t *out = (int16_t*)pOutput;
-	for (int i = 0; i < sampsout * CHANNELS; i++) {
+	for (int i = 0; i < frameCount * CHANNELS; i++) {
 		out[i] = aq_deq();
 	}
-	
 	pthread_mutex_unlock(&mutex);
 }
 
