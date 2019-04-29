@@ -9,7 +9,7 @@ ifeq ($(OS),Windows_NT)
 	FLAGS += -D_MINGW
 endif
 
-LIBS	=	-lm $(shell pkg-config --libs glfw3 epoxy ao)
+LIBS	=	-lm -ldl -lpthread $(shell pkg-config --libs glfw3 epoxy)
 
 OBJ	=	obj/z80.o \
 		obj/sms.o \

@@ -1,16 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <pthread.h>
 #include <libgen.h>
 #include <errno.h>
 #include <sys/stat.h>
 
 #include <GLFW/glfw3.h>
 
-#include <ao/ao.h>
-
 #define GB_INI_IMPLEMENTATION
 #include "gb_ini.h"
+
+#define MINIAUDIO_IMPLEMENTATION
+#define MA_NO_PULSEAUDIO
+#define MA_NO_JACK
+#define MA_NO_AAUDIO
+#define MA_NO_OPENSL
+#define MA_NO_WEBAUDIO
+#define MA_NO_DECODING
+#define MA_NO_STDIO
+#include "miniaudio.h"
+
+#define BUFSIZE 6400
+#define CHANNELS 2
 
 #include "shared.h"
 
@@ -22,49 +34,116 @@ gamedata_t gdata;
 
 static GLFWwindow *window;
 
-static ao_device *aodevice;
-static ao_sample_format aoformat;
-static int16_t audiobuf[96000];
+static int16_t audiobuf[BUFSIZE];
 
 static int frames = 1;
 
 extern unsigned char *pixels;
 
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static ma_device madevice;
+
+typedef struct aq_t {
+	uint32_t front; // Front of the queue
+	uint32_t rear; // Rear of the queue
+	uint32_t qsize; // Size of the queue
+	uint32_t bsize; // Size of the buffer
+	int16_t *buffer; // Pointer to the buffer
+} aq_t;
+
+static aq_t aq = {0};
+
+static inline void aq_enq(int16_t *data, size_t size) {
+	// Don't overflow the buffer
+	while (aq.qsize >= aq.bsize - (size + 1)) {
+		//fprintf(stderr, "Audio Queue full!\n");
+	}
+	// Lock before adding new data
+	pthread_mutex_lock(&mutex);
+	for (int i = 0; i < size; i++) { // Populate the queue
+		aq.buffer[aq.rear] = data[i];
+		aq.rear = (aq.rear + 1) % aq.bsize;
+		aq.qsize++;
+	}
+	pthread_mutex_unlock(&mutex);
+}
+
+static inline int16_t aq_deq() {
+	if (aq.qsize == 0) {
+		//fprintf(stderr, "Audio Queue underflow!\n");
+		return 0;
+	}
+	int16_t sample = aq.buffer[aq.front];
+	aq.front = (aq.front + 1) % aq.bsize;
+	aq.qsize--;
+	return sample;
+}
+
+static void ma_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+	(void)pInput; // Don't take input
+	
+	pthread_mutex_lock(&mutex);
+	int sampsout = aq.qsize < frameCount ? aq.qsize : frameCount;
+	
+	int16_t *out = (int16_t*)pOutput;
+	for (int i = 0; i < sampsout * CHANNELS; i++) {
+		out[i] = aq_deq();
+	}
+	
+	pthread_mutex_unlock(&mutex);
+}
+
+void audio_init_ma() {
+	// Set up "config" for playback
+	ma_device_config config = ma_device_config_init(ma_device_type_playback);
+	config.playback.pDeviceID = NULL; // NULL for default
+	config.playback.format = ma_format_s16; // signed 16-bit integers
+	config.playback.channels = CHANNELS; // SMS is stereo
+	config.sampleRate = settings.audio_rate;
+	config.dataCallback = ma_callback;
+	config.pUserData = NULL;
+	
+	// Init hardware device
+	if (ma_device_init(NULL, &config, &madevice) != MA_SUCCESS) {
+        fprintf(stderr, "Failed to open playback device.\n");
+    }
+    else {
+		fprintf(stdout, "Audio: %s, %dHz\n", madevice.playback.name, settings.audio_rate);
+	}
+	
+	if (ma_device_start(&madevice) != MA_SUCCESS) {
+		fprintf(stderr, "Failed to start playback device.\n");
+		ma_device_uninit(&madevice);
+	}
+}
+
 static void audio_init() {
-	ao_initialize();
-	memset(&aoformat, 0, sizeof(aoformat));
+	// First build the queue
+	aq.front = 0;
+	aq.rear = 0;
+	aq.qsize = 0;
+	aq.bsize = (settings.audio_rate / 60) * 8 * CHANNELS; // hardcoded 8 frames
+	aq.buffer = (int16_t*)malloc(sizeof(int16_t) * aq.bsize);
+	memset(aq.buffer, 0, sizeof(int16_t) * aq.bsize);
+	memset(audiobuf, 0, BUFSIZE * sizeof(int16_t));
 	
-	aoformat.bits = 16;
-	aoformat.channels = 2;
-	aoformat.rate = settings.audio_rate;
-	aoformat.byte_format = AO_FMT_NATIVE;
-	
-	aodevice = ao_open_live(ao_default_driver_id(), &aoformat, NULL); // Live output
-	
-	if (aodevice == NULL) {
-		fprintf(stderr, "Error opening audio device.\n");
-		aodevice = ao_open_live(ao_driver_id("null"), &aoformat, NULL);
-	}
-	else {
-		fprintf(stderr, "libao: %dHz, %d-bit, %d channel(s)\n", aoformat.rate, aoformat.bits, aoformat.channels);
-	}
+	audio_init_ma();
 }
 
 static void audio_deinit() {
 	// Deinitialize audio
-	ao_close(aodevice);
-	ao_shutdown();
+	ma_device_uninit(&madevice);
+	if (aq.buffer) { free(aq.buffer); }
 }
 
-static void audio_play() {
+static void audio_push() {
 	// Interleave the channels
-	int channels = 2;
-	for (int i = 0; i < (2 * channels * (settings.audio_rate / 60)); ++i) {
+	for (int i = 0; i < ((settings.audio_rate / 60) * CHANNELS); i++) {
 		audiobuf[i * 2] = snd.output[1][i];
 		audiobuf[i * 2 + 1] = snd.output[0][i];
 	}
-	// Output
-	ao_play(aodevice, (char*)audiobuf, 2 * channels * (settings.audio_rate / 60));
+	aq_enq(audiobuf, (settings.audio_rate / 60) * CHANNELS);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -394,8 +473,8 @@ int main (int argc, char *argv[]) {
 	
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window)) {
-		// Output audio
-		audio_play();
+		// Push audio samples
+		audio_push();
 		
 		// Refresh video data
 		bitmap.data = pixels;
