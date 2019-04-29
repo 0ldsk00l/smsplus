@@ -6,6 +6,9 @@
 #define VIDEO_WIDTH_GG 160
 #define VIDEO_HEIGHT_GG 144
 
+void smsp_video_create_buffer();
+uint8_t *smsp_video_pixels_ptr();
+
 void ogl_init();
 void ogl_render();
 void ogl_deinit();

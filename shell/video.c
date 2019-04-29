@@ -12,7 +12,7 @@
 #include "smsplus.h"
 #include "video.h"
 
-unsigned char *pixels;
+static uint8_t *pixels = NULL;
 
 static int renderwidth, renderheight;
 
@@ -45,7 +45,12 @@ static GLuint gl_texture_id = 0;
 
 static int ggoffset[2] = {0,0};
 
-extern settings_t settings;
+void smsp_video_create_buffer() {
+	// Create video buffer
+	pixels = calloc(VIDEO_WIDTH_SMS * VIDEO_HEIGHT_SMS * 4, 1);
+}
+
+uint8_t *smsp_video_pixels_ptr() { return pixels; }
 
 void ogl_render() {
 	// Render the scene
@@ -66,6 +71,9 @@ void ogl_render() {
 
 void ogl_init() {
 	// Initialize OpenGL
+	
+	// Grab settings pointer
+	settings_t *settings = smsp_settings_ptr();
 	
 	float vertices[] = {
 		-1.0f, -1.0f,	// Vertex 1 (X, Y)
@@ -125,15 +133,15 @@ void ogl_init() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, gl_texture_id);
 	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, settings.video_filter ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, settings->video_filter ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
-	renderwidth = VIDEO_WIDTH_SMS * settings.video_scale;
-	renderheight = VIDEO_HEIGHT_SMS * settings.video_scale;
+	renderwidth = VIDEO_WIDTH_SMS * settings->video_scale;
+	renderheight = VIDEO_HEIGHT_SMS * settings->video_scale;
 	
 	if (sms.console == CONSOLE_GG) {
 		ggoffset[0] = VIDEO_HEIGHT_SMS;
-		ggoffset[1] = 24 * settings.video_scale;
+		ggoffset[1] = 24 * settings->video_scale;
 	}
 	
 	glViewport(0, 0 - ggoffset[1], renderwidth, renderheight);
@@ -170,11 +178,13 @@ static void smsp_video_screenshot_flip(unsigned char *pixbuf, int width, int hei
 void smsp_video_screenshot(const char* filename) {
 	// Take a screenshot in .png format
 	
+	settings_t *settings = smsp_settings_ptr();
+	
 	int sswidth, ssheight;
 	
 	if (sms.console == CONSOLE_GG) {
-		sswidth = VIDEO_WIDTH_GG * settings.video_scale;
-		ssheight = VIDEO_HEIGHT_GG * settings.video_scale;
+		sswidth = VIDEO_WIDTH_GG * settings->video_scale;
+		ssheight = VIDEO_HEIGHT_GG * settings->video_scale;
 	}
 	else {
 		sswidth = renderwidth;

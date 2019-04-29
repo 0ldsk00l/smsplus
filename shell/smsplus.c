@@ -33,16 +33,12 @@ settings_t settings;
 gamedata_t gdata;
 
 static GLFWwindow *window;
-
-static int16_t audiobuf[BUFSIZE];
-
 static int frames = 1;
-
-extern unsigned char *pixels;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static ma_device madevice;
+static int16_t audiobuf[BUFSIZE];
 
 typedef struct aq_t {
 	uint32_t front; // Front of the queue
@@ -79,6 +75,8 @@ static inline int16_t aq_deq() {
 	aq.qsize--;
 	return sample;
 }
+
+settings_t *smsp_settings_ptr() { return &settings; }
 
 static void ma_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
 	(void)pInput; // Don't take input
@@ -408,8 +406,9 @@ int main (int argc, char *argv[]) {
 		fprintf(stderr, "Error: No smsplus.ini file found.\n");
 	}
 	
-	// Create video buffer
-	pixels = calloc(VIDEO_WIDTH_SMS * VIDEO_HEIGHT_SMS * 4, 1);
+	// Create video buffer and grab the pointer
+	smsp_video_create_buffer();
+	uint8_t *pixels = smsp_video_pixels_ptr();
 	
 	// Set parameters for internal bitmap
 	bitmap.width = VIDEO_WIDTH_SMS;

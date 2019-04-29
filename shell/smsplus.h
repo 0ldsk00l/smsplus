@@ -18,6 +18,7 @@ typedef struct {
 	int misc_ffspeed;
 } settings_t;
 
+settings_t *smsp_settings_ptr();
 void smsp_state(int slot, int mode);
 
 #endif
