@@ -29,8 +29,8 @@
 #include "smsplus.h"
 #include "video.h"
 
-settings_t settings;
-gamedata_t gdata;
+static settings_t settings;
+static gamedata_t gdata;
 
 static GLFWwindow *window;
 static int frames = 1;
