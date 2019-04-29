@@ -386,7 +386,12 @@ int main (int argc, char *argv[]) {
 	}
 	
 	fprintf(stdout, "CRC : %08X\n", cart.crc);
-	fprintf(stdout, "SHA1: %s\n", cart.sha1);
+	//fprintf(stdout, "SHA1: %s\n", cart.sha1);
+	fprintf(stdout, "SHA1: ");
+	for (int i = 0; i < SHA1_DIGEST_SIZE; i++) {
+		fprintf(stdout, "%02X", cart.sha1[i]);
+	}
+	fprintf(stdout, "\n");
 	
 	// Set defaults
 	settings.video_scale = 2;

@@ -109,23 +109,12 @@ void sha1_final(sha1_context_t* context, uint8_t digest[SHA1_DIGEST_SIZE]) {
 	memset(finalcount, 0, 8);
 }
 
-const char* sha1(const void *buf, size_t size) {
-
+void sha1(uint8_t *digest, const void *buf, size_t size) {
+	// Do the SHA1 hash operation
 	sha1_context_t context;
-	uint8_t digest[SHA1_DIGEST_SIZE];
-	
 	sha1_init(&context);
 	sha1_update(&context, buf, size);
 	sha1_final(&context, digest);
-	
-	char strbuf[SHA1_DIGEST_SIZE * 2 + 1];
-	static char checksum[SHA1_DIGEST_SIZE * 2 + 1];
-	for (int i = 0; i < SHA1_DIGEST_SIZE; i++) {
-		snprintf(strbuf, sizeof(strbuf), "%s", checksum);
-		snprintf(checksum, sizeof(checksum), "%s%02X", strbuf, digest[i]);
-	}
-
-	return checksum;
 }
 
 static uint32_t crc32_tab[] = {

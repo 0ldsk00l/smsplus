@@ -67,9 +67,11 @@ int load_rom(char *filename)
 
     cart.pages = (size / 0x4000);
     cart.crc = crc32(0L, cart.rom, size);
-    
-    const char *shabuf = sha1(cart.rom, sizeof(cart.rom));
-    snprintf(cart.sha1, sizeof(cart.sha1), "%s", shabuf);
+
+    uint8_t *temprom = malloc(size * sizeof(uint8_t));
+    memcpy(temprom, cart.rom, size);
+    sha1(cart.sha1, temprom, size);
+    free(temprom);
 
     /* Assign default settings (US NTSC machine) */
     cart.mapper     = MAPPER_SEGA;
@@ -93,3 +95,51 @@ int load_rom(char *filename)
     return 1;
 }
 
+int load_rom_mem(uint8_t *rom, size_t size)
+{
+    int i;
+
+    if(cart.rom) { free(cart.rom); }
+
+    cart.rom = (uint8_t*)malloc(size * sizeof(uint8_t));
+    memcpy(cart.rom, rom, size);
+    
+    /* Don't load games smaller than 16K */
+    if(size < 0x4000) return 0;
+
+    /* Take care of image header, if present */
+    if((size / 512) & 1)
+    {
+        size -= 512;
+        memmove(cart.rom, cart.rom + 512, size);
+    }
+
+    cart.pages = (size / 0x4000);
+    cart.crc = crc32(0L, cart.rom, size);
+
+    uint8_t *temprom = malloc(size * sizeof(uint8_t));
+    memcpy(temprom, cart.rom, size);
+    sha1(cart.sha1, temprom, size);
+    free(temprom);
+
+    /* Assign default settings (US NTSC machine) */
+    cart.mapper     = MAPPER_SEGA;
+    sms.display     = DISPLAY_NTSC;
+    sms.territory   = TERRITORY_EXPORT;
+
+    /* Look up mapper in game list */
+    for(i = 0; game_list[i].name != NULL; i++)
+    {
+        if(cart.crc == game_list[i].crc)
+        {
+            cart.mapper     = game_list[i].mapper;
+            sms.display     = game_list[i].display;
+            sms.territory   = game_list[i].territory;
+        }
+    }
+
+    system_assign_device(PORT_A, DEVICE_PAD2B);
+    system_assign_device(PORT_B, DEVICE_PAD2B);
+
+    return 1;
+}

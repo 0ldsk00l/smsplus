@@ -26,7 +26,7 @@ typedef struct {
 	uint8_t  buffer[64];
 } sha1_context_t;
 
-const char* sha1(const void *buf, size_t size);
+void sha1(uint8_t *digest, const void *buf, size_t size);
 void sha1_init(sha1_context_t* context);
 void sha1_transform(uint32_t state[5], const uint8_t buffer[64]);
 void sha1_update(sha1_context_t* context, const uint8_t* data, const size_t len);

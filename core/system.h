@@ -43,7 +43,7 @@ typedef struct
     uint8_t *rom;
     uint8_t pages;
     uint32_t crc;
-    char sha1[41];
+    uint8_t sha1[20];
     uint32_t sram_crc;
     int mapper;
     uint8_t sram[0x8000];
